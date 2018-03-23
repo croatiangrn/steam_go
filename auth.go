@@ -10,14 +10,14 @@ import (
 )
 
 var (
-	steam_login = "https://steamcommunity.com/openid/login"
+	steamLogin = "https://steamcommunity.com/openid/login"
 
-	openId_mode       = "checkid_setup"
-	openId_ns         = "http://specs.openid.net/auth/2.0"
-	openId_identifier = "http://specs.openid.net/auth/2.0/identifier_select"
+	openIdMode       = "checkid_setup"
+	openIdNs         = "http://specs.openid.net/auth/2.0"
+	openIdIdentifier = "http://specs.openid.net/auth/2.0/identifier_select"
 
-	validation_regexp        = regexp.MustCompile("^(http|https)://steamcommunity.com/openid/id/[0-9]{15,25}$")
-	digits_extraction_regexp = regexp.MustCompile("\\D+")
+	validationRegexp       = regexp.MustCompile("^(http|https)://steamcommunity.com/openid/id/[0-9]{15,25}$")
+	digitsExtractionRegexp = regexp.MustCompile("\\D+")
 )
 
 type OpenId struct {
@@ -51,35 +51,39 @@ func NewOpenId(r *http.Request) *OpenId {
 	return id
 }
 
-func (id OpenId) AuthUrl() string {
+func (id OpenId) AuthUrl(returnUrl string) string {
+	if returnUrl == "" {
+		returnUrl = id.returnUrl
+	}
+
 	data := map[string]string{
-		"openid.claimed_id": openId_identifier,
-		"openid.identity":   openId_identifier,
-		"openid.mode":       openId_mode,
-		"openid.ns":         openId_ns,
+		"openid.claimed_id": openIdIdentifier,
+		"openid.identity":   openIdIdentifier,
+		"openid.mode":       openIdMode,
+		"openid.ns":         openIdNs,
 		"openid.realm":      id.root,
-		"openid.return_to":  id.returnUrl,
+		"openid.return_to":  returnUrl,
 	}
 
 	i := 0
-	url := steam_login + "?"
+	urlSteam := steamLogin + "?"
 	for key, value := range data {
-		url += key + "=" + value
+		urlSteam += key + "=" + value
 		if i != len(data)-1 {
-			url += "&"
+			urlSteam += "&"
 		}
 		i++
 	}
-	return url
+	return urlSteam
 }
 
 func (id *OpenId) ValidateAndGetId() (string, error) {
 	if id.Mode() != "id_res" {
-		return "", errors.New("Mode must equal to \"id_res\".")
+		return "", errors.New("mode must equal to \"id_res\"")
 	}
 
 	if id.data.Get("openid.return_to") != id.returnUrl {
-		return "", errors.New("The \"return_to url\" must match the url of current request.")
+		return "", errors.New("the \"return_to url\" must match the url of current request")
 	}
 
 	params := make(url.Values)
@@ -94,7 +98,7 @@ func (id *OpenId) ValidateAndGetId() (string, error) {
 	}
 	params.Set("openid.mode", "check_authentication")
 
-	resp, err := http.PostForm(steam_login, params)
+	resp, err := http.PostForm(steamLogin, params)
 	if err != nil {
 		return "", err
 	}
@@ -105,19 +109,19 @@ func (id *OpenId) ValidateAndGetId() (string, error) {
 	}
 
 	response := strings.Split(string(content), "\n")
-	if response[0] != "ns:"+openId_ns {
-		return "", errors.New("Wrong ns in the response.")
+	if response[0] != "ns:"+openIdNs {
+		return "", errors.New("wrong ns in the response")
 	}
 	if strings.HasSuffix(response[1], "false") {
-		return "", errors.New("Unable validate openId.")
+		return "", errors.New("unable validate openId")
 	}
 
 	openIdUrl := id.data.Get("openid.claimed_id")
-	if !validation_regexp.MatchString(openIdUrl) {
-		return "", errors.New("Invalid steam id pattern.")
+	if !validationRegexp.MatchString(openIdUrl) {
+		return "", errors.New("invalid steam id pattern")
 	}
 
-	return digits_extraction_regexp.ReplaceAllString(openIdUrl, ""), nil
+	return digitsExtractionRegexp.ReplaceAllString(openIdUrl, ""), nil
 }
 
 func (id OpenId) ValidateAndGetUser(apiKey string) (*PlayerSummaries, error) {
