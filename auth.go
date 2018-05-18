@@ -86,6 +86,7 @@ func (id *OpenId) ValidateAndGetId() (string, error) {
 	}
 	fmt.Println(id.data.Get("openid.return_to"))
 	fmt.Println(id.returnUrl)
+	id.returnUrl = strings.Replace(id.returnUrl, "http://", "https://", 1)
 	if id.data.Get("openid.return_to") != id.returnUrl {
 		return "", errors.New("the \"return_to url\" must match the url of current request")
 	}
