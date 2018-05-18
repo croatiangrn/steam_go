@@ -7,7 +7,6 @@ import (
 	"net/url"
 	"regexp"
 	"strings"
-	"fmt"
 )
 
 var (
