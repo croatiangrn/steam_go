@@ -7,6 +7,7 @@ import (
 	"net/url"
 	"regexp"
 	"strings"
+	"fmt"
 )
 
 var (
@@ -83,7 +84,8 @@ func (id *OpenId) ValidateAndGetId() (string, error) {
 	if id.Mode() != "id_res" {
 		return "", errors.New("mode must equal to \"id_res\"")
 	}
-
+	fmt.Println(id.data.Get("openid.return_to"))
+	fmt.Println(id.returnUrl)
 	if id.data.Get("openid.return_to") != id.returnUrl {
 		return "", errors.New("the \"return_to url\" must match the url of current request")
 	}
