@@ -7,6 +7,7 @@ import (
 	"net/url"
 	"regexp"
 	"strings"
+	"fmt"
 )
 
 var (
@@ -40,7 +41,6 @@ func NewOpenId(r *http.Request) *OpenId {
 		uri = uri[0 : i-1]
 	}
 	id.returnUrl = id.root + uri
-
 	switch r.Method {
 	case "POST":
 		id.data = r.Form
@@ -51,17 +51,20 @@ func NewOpenId(r *http.Request) *OpenId {
 	return id
 }
 
-func (id OpenId) AuthUrl(returnUrl string) string {
+func (id OpenId) AuthUrl(returnUrl string, realmUrl string) string {
 	if returnUrl == "" {
 		returnUrl = id.returnUrl
 	}
+	if realmUrl == "" {
+	    realmUrl = id.root
+    }
 
 	data := map[string]string{
 		"openid.claimed_id": openIdIdentifier,
 		"openid.identity":   openIdIdentifier,
 		"openid.mode":       openIdMode,
 		"openid.ns":         openIdNs,
-		"openid.realm":      id.root,
+		"openid.realm":      realmUrl,
 		"openid.return_to":  returnUrl,
 	}
 
